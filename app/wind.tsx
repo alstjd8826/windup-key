@@ -84,7 +84,7 @@ export default function WindScreen() {
   return (
     <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
       <Animated.Text entering={rise(0)} style={styles.title}>
-        사용 시간
+        열어 둘 시간
       </Animated.Text>
 
       <View style={styles.keyArea} onLayout={onKeyLayout}>
@@ -124,12 +124,12 @@ export default function WindScreen() {
         <PressableScale disabled={!enabled} onPress={onUse} style={styles.useWrap}>
           <Animated.View style={[styles.useButton, buttonStyle]}>
             <Animated.Text style={[styles.useText, buttonTextStyle]}>
-              {enabled ? '' : '사용'}
+              {enabled ? '' : '열기'}
             </Animated.Text>
             {enabled && (
               <Animated.View entering={FadeIn.duration(180)} style={styles.useLabel}>
                 <RollingNumber value={minutes} style={styles.useTextOn} lineHeight={BUTTON_LINE} />
-                <Text style={styles.useTextOn}>분 사용</Text>
+                <Text style={styles.useTextOn}>분 동안 열기</Text>
               </Animated.View>
             )}
           </Animated.View>

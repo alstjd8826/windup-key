@@ -10,6 +10,8 @@ import KeyCanvas from '../components/KeyCanvas';
 import { keyAppear, rise } from '../components/motion';
 import PressableScale from '../components/PressableScale';
 import TimeRuler from '../components/TimeRuler';
+import * as ScreenTime from '../modules/screen-time';
+import { useLock } from '../stores/lock';
 import { remainingMs, useUsage } from '../stores/usage';
 
 const MINUTE = 60_000;
@@ -47,8 +49,12 @@ export default function TimerScreen() {
     const s = useUsage.getState().session;
     if (s && s.endsAt > Date.now()) return;
     const n = Number(params.minutes);
-    if (n > 0) startSession(n);
-    else leave();
+    if (n > 0) {
+      startSession(n);
+      const started = useUsage.getState().session;
+      // 실제 앱 해제 + N분 뒤 익스텐션이 다시 잠그도록 스케줄
+      if (started) ScreenTime.unlockFor(started.minutes).catch((e) => console.warn('[screen-time] unlockFor', e));
+    } else leave();
   }, [params.minutes, startSession]);
 
   /** 남은 시간에 맞춰 열쇠·눈금자 애니메이션을 다시 건다 (진입·포그라운드 복귀) */
@@ -96,6 +102,7 @@ export default function TimerScreen() {
       ended.current = true;
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       finishSession();
+      ScreenTime.lockNow(); // 익스텐션이 늦을 때를 대비해 한 번 더
       leave();
     }
   }, [left, session, finishSession]);
@@ -106,8 +113,12 @@ export default function TimerScreen() {
     cancelAnimation(rotation);
     cancelAnimation(ratio);
     stopSession();
+    ScreenTime.lockNow();
     leave();
   };
+
+  const selection = useLock((s) => s.selection);
+  const appCount = useLock((s) => s.count);
 
   const totalMin = session?.minutes ?? (Number(params.minutes) || 0);
 
@@ -121,7 +132,7 @@ export default function TimerScreen() {
 
       <Animated.View entering={rise(1)} style={styles.timeBlock}>
         <Text style={styles.time}>{session ? formatMSS(left) : `${totalMin}:00`}</Text>
-        <Text style={styles.remaining}>remaining</Text>
+        <Text style={styles.remaining}>열려 있는 시간</Text>
       </Animated.View>
 
       <Animated.View entering={rise(2)} style={styles.ruler}>
@@ -130,27 +141,33 @@ export default function TimerScreen() {
 
       <Animated.View entering={rise(3)} style={styles.apps}>
         <Text style={styles.appsLabel}>Unlocked apps</Text>
-        <View style={styles.appRow}>
-          {Array.from({ length: APP_SLOTS }, (_, i) => (
-            // 6단계 전까지는 플레이스홀더 원
-            <Animated.View
-              key={i}
-              entering={ZoomIn.delay(420 + i * 50).springify().damping(14)}
-              style={styles.appSlot}
-            />
-          ))}
-        </View>
+        {appCount > 0 ? (
+          <Animated.View entering={ZoomIn.delay(420).springify().damping(14)}>
+            <ScreenTime.AppIcons selection={selection} maxCount={APP_SLOTS} iconSize={36} spacing={14} style={styles.appIcons} />
+          </Animated.View>
+        ) : (
+          <View style={styles.appRow}>
+            {Array.from({ length: APP_SLOTS }, (_, i) => (
+              // 잠글 앱을 아직 고르지 않았을 때
+              <Animated.View
+                key={i}
+                entering={ZoomIn.delay(420 + i * 50).springify().damping(14)}
+                style={styles.appSlot}
+              />
+            ))}
+          </View>
+        )}
       </Animated.View>
 
       <View style={styles.spacer} />
 
       <Animated.Text entering={rise(5)} style={styles.caption}>
-        시간이 되면 자동으로 다시 잠깁니다.{'\n'}중간에 멈추면 남은 시간은 오늘 잔여로 돌아갑니다.
+        시간이 되면 자동으로 다시 잠깁니다.{'\n'}중간에 잠그면 남은 시간은 오늘 잔여로 돌아갑니다.
       </Animated.Text>
 
       <Animated.View entering={rise(6)} style={styles.actions}>
         <PressableScale onPress={onStop} style={styles.stopButton}>
-          <Text style={styles.stopText}>멈추기</Text>
+          <Text style={styles.stopText}>지금 잠그기</Text>
         </PressableScale>
       </Animated.View>
     </SafeAreaView>
@@ -167,6 +184,7 @@ const styles = StyleSheet.create({
   apps: { marginTop: 32, paddingHorizontal: 24 },
   appsLabel: { fontSize: 12, color: '#aaa', marginBottom: 12 },
   appRow: { flexDirection: 'row', gap: 14 },
+  appIcons: { height: 40 },
   appSlot: {
     width: 36,
     height: 36,

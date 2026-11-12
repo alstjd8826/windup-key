@@ -73,7 +73,7 @@ export default function HomeScreen() {
         <Text style={styles.unit}>min</Text>
       </Animated.View>
       <Animated.Text entering={rise(4)} style={styles.caption}>
-        &apos;사용&apos;을 누르고 쓸 만큼 태엽을 감으세요.
+        쓸 만큼 태엽을 감으면 그동안만 앱이 열립니다.
       </Animated.Text>
 
       <View style={styles.spacer} />
@@ -83,7 +83,7 @@ export default function HomeScreen() {
           onPress={() => router.push(active ? '/timer' : '/wind')}
           style={styles.useButton}
         >
-          <Text style={styles.useText}>{active ? '사용 중' : '사용'}</Text>
+          <Text style={styles.useText}>{active ? '열려 있음' : '태엽 감고 열기'}</Text>
         </PressableScale>
       </Animated.View>
     </SafeAreaView>

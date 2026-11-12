@@ -8,6 +8,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { useLock } from '../stores/lock';
 import { useUsage } from '../stores/usage';
 
 function formatMSS(ms: number) {
@@ -15,9 +16,10 @@ function formatMSS(ms: number) {
   return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
 }
 
-/** 홈 상단 상태 칩: "● 잠김" / "● 사용 중 M:SS" (사용 중엔 점이 숨 쉬듯 깜빡) */
+/** 홈 상단 상태 칩: "● 잠김 · 앱 N개" / "● 열림 · M:SS 남음" (열려 있을 땐 점이 숨 쉬듯 깜빡) */
 export default function StatusChip() {
   const session = useUsage((s) => s.session);
+  const appCount = useLock((s) => s.count);
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -36,7 +38,11 @@ export default function StatusChip() {
   const dotStyle = useAnimatedStyle(() => ({ opacity: pulse.value }));
 
   const active = session && session.endsAt > now;
-  const label = active ? `사용 중 ${formatMSS(session.endsAt - now)}` : '잠김';
+  const label = active
+    ? `열림 · ${formatMSS(session.endsAt - now)} 남음`
+    : appCount > 0
+      ? `잠김 · 앱 ${appCount}개`
+      : '잠김';
 
   return (
     <View style={styles.chip}>
