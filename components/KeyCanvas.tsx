@@ -16,6 +16,8 @@ type Props = {
   /** 캔버스 폭 대비 열쇠 폭 비율 */
   widthRatio: number;
   background?: string;
+  /** 화면 평면에서 기울이기(rad) */
+  tilt?: number;
 };
 
 /** drei <Environment> 대신 RoomEnvironment + PMREM 으로 환경맵 생성 */
@@ -64,7 +66,7 @@ function CameraRig({ widthRatio }: { widthRatio: number }) {
 
 const IS_SIM = !Device.isDevice;
 
-export default function KeyCanvas({ rotation, widthRatio, background = '#F5F5F5' }: Props) {
+export default function KeyCanvas({ rotation, widthRatio, background = '#F5F5F5', tilt = 0 }: Props) {
   // 시뮬레이터(demand 렌더)에서는 회전값이 바뀔 때 직접 다시 그리라고 알려야 한다
   const invalidateRef = useRef<(() => void) | null>(null);
   const invalidate = useCallback(() => invalidateRef.current?.(), []);
@@ -99,7 +101,7 @@ export default function KeyCanvas({ rotation, widthRatio, background = '#F5F5F5'
         </>
       )}
       <CameraRig widthRatio={widthRatio} />
-      <WindupKey rotation={rotation} />
+      <WindupKey rotation={rotation} tilt={tilt} />
     </Canvas>
   );
 }

@@ -13,7 +13,6 @@ import Svg, { Line, Path } from 'react-native-svg';
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 const AnimatedLine = Animated.createAnimatedComponent(Line);
 
-const TWO_PI = Math.PI * 2;
 const TICKS = 60;
 const SHORT = 6;
 const LONG = 12;
@@ -21,10 +20,8 @@ const LONG = 12;
 const FEATHER = 6;
 
 type Props = {
-  /** 열쇠 누적 회전(rad). 현재 바퀴 진행률 = (total % 2π) / 2π */
-  total: SharedValue<number>;
-  /** 최대치에 도달했으면 마지막 바퀴를 꽉 찬 상태로 보여준다 */
-  maxTotal: number;
+  /** 채울 비율 0~1 */
+  progress: SharedValue<number>;
   radius?: number;
   /** 진입 시 눈금이 위에서 아래로 쓸리며 나타나기 시작하는 시점(ms) */
   revealDelay?: number;
@@ -53,10 +50,10 @@ const TickLine = memo(function TickLine({ t, reveal }: { t: Tick; reveal: Shared
 });
 
 /**
- * 열쇠 오른쪽 반원 게이지 (위 -90° → 아래 +90°).
+ * 열쇠 오른쪽 반원 게이지 (위 -90° → 아래 +90°). progress 만큼 진한 선으로 채운다.
  * 부모(열쇠 영역)를 꽉 채우고, 중심은 부모 중앙 = 열쇠 중심.
  */
-export default function WindGauge({ total, maxTotal, radius = 140, revealDelay = 250 }: Props) {
+export default function WindGauge({ progress, radius = 140, revealDelay = 250 }: Props) {
   const [size, setSize] = useState({ w: 0, h: 0 });
   const cx = size.w / 2;
   const cy = size.h / 2;
@@ -91,8 +88,7 @@ export default function WindGauge({ total, maxTotal, radius = 140, revealDelay =
   }, [size.w, cx, cy, radius]);
 
   const progressProps = useAnimatedProps(() => {
-    const t = total.value;
-    const p = t >= maxTotal ? 1 : (t % TWO_PI) / TWO_PI;
+    const p = Math.min(Math.max(progress.value, 0), 1);
     return { strokeDashoffset: arcLen * (1 - p), opacity: p > 0.002 ? 1 : 0 };
   });
 

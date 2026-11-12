@@ -7,6 +7,7 @@ import Animated, {
   interpolateColor,
   useAnimatedProps,
   useAnimatedStyle,
+  useDerivedValue,
   useSharedValue,
   withSequence,
   withSpring,
@@ -36,6 +37,12 @@ export default function WindScreen() {
   const { gesture, total, minutes, reset, onKeyLayout } = useWindGesture(maxMinutes);
   const enabled = minutes > 0;
 
+  // 게이지: 현재 바퀴 진행률. 최대치에 도달하면 꽉 찬 채로
+  const maxTotal = maxMinutes * TWO_PI;
+  const progress = useDerivedValue(() =>
+    total.value >= maxTotal ? 1 : (total.value % TWO_PI) / TWO_PI,
+  );
+
   // 버튼 비활성 ↔ 활성 색 전환
   const active = useSharedValue(0);
   useEffect(() => {
@@ -64,18 +71,14 @@ export default function WindScreen() {
   });
 
   const onUse = () => {
-    router.push({ pathname: '/timer', params: { minutes: String(minutes) } });
-    // 타이머가 화면을 덮은 뒤 조용히 리셋 (돌아왔을 때 0부터)
-    setTimeout(() => reset(), 400);
+    // 감기 화면을 타이머로 교체 → 타이머가 끝나면 홈으로 돌아간다
+    router.replace({ pathname: '/timer', params: { minutes: String(minutes) } });
   };
 
   const onQuit = () => {
-    if (router.canGoBack()) {
-      reset();
-      router.back();
-    } else {
-      reset(true); // 돌아갈 곳이 없으면 열쇠를 되감으며 리셋
-    }
+    reset(true); // 열쇠를 되감으며 리셋
+    if (router.canGoBack()) router.back();
+    else router.replace('/');
   };
 
   return (
@@ -88,7 +91,7 @@ export default function WindScreen() {
         <Animated.View entering={keyAppear()} style={StyleSheet.absoluteFill}>
           <KeyCanvas rotation={total} widthRatio={0.45} />
         </Animated.View>
-        <WindGauge total={total} maxTotal={maxMinutes * TWO_PI} revealDelay={250} />
+        <WindGauge progress={progress} revealDelay={250} />
       </View>
 
       <Animated.View entering={rise(3)}>

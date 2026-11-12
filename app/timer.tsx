@@ -22,10 +22,10 @@ function formatMSS(ms: number) {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-/** 타이머가 끝나거나 멈췄을 때 나가는 곳 (5단계 전: 감기 화면) */
+/** 타이머가 끝나거나 멈췄을 때: 홈으로 */
 function leave() {
   if (router.canGoBack()) router.back();
-  else router.replace('/wind');
+  else router.replace('/');
 }
 
 export default function TimerScreen() {

@@ -18,7 +18,7 @@ function useRestoreSession() {
       const s = useUsage.getState().session;
       if (s && s.endsAt > Date.now()) {
         // 네비게이터가 마운트된 다음 프레임에 이동
-        requestAnimationFrame(() => router.replace('/timer'));
+        requestAnimationFrame(() => router.push('/timer')); // 홈 위에 쌓아서 끝나면 홈으로
       }
     };
     const unsub = useUsage.persist.onFinishHydration(onHydrated);
@@ -41,7 +41,8 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <StatusBar style="dark" />
       <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="wind" options={{ animation: 'fade' }} />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="wind" options={{ animation: 'fade_from_bottom' }} />
         {/* 타이머 중에는 스와이프로 뒤로 못 나간다 */}
         <Stack.Screen name="timer" options={{ gestureEnabled: false, animation: 'fade' }} />
       </Stack>

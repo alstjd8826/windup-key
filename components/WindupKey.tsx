@@ -6,6 +6,8 @@ import * as THREE from 'three';
 type Props = {
   /** Y축 회전(rad). 화면 좌표 기준 시계 방향 누적값 */
   rotation: SharedValue<number>;
+  /** 화면 평면에서 기울이기(rad, +면 시계 방향). 홈 화면에서 비스듬히 놓을 때 */
+  tilt?: number;
 };
 
 // ── 치수 (단위: three 월드 유닛) ────────────────────────────
@@ -75,7 +77,7 @@ function makeDishGeometry(halfDepth: number) {
   return g;
 }
 
-export default function WindupKey({ rotation }: Props) {
+export default function WindupKey({ rotation, tilt = 0 }: Props) {
   const group = useRef<THREE.Group>(null);
 
   const { handle, dish, material } = useMemo(() => {
@@ -108,6 +110,7 @@ export default function WindupKey({ rotation }: Props) {
   const cx = LOBE_GAP / 2;
 
   return (
+    <group rotation={[0, 0, -tilt]}>
     <group ref={group}>
       {/* 손잡이 */}
       <group position={[0, HANDLE_Y, 0]}>
@@ -130,6 +133,7 @@ export default function WindupKey({ rotation }: Props) {
       <mesh material={material} position={[0, SHAFT_BOTTOM + SOCKET_LEN / 2 - 0.02, 0]}>
         <cylinderGeometry args={[SOCKET_R, SOCKET_R, SOCKET_LEN, 6]} />
       </mesh>
+    </group>
     </group>
   );
 }
