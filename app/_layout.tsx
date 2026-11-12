@@ -67,6 +67,7 @@ export default function RootLayout() {
         <Stack.Screen name="wind" options={{ animation: 'fade_from_bottom' }} />
         {/* 타이머 중에는 스와이프로 뒤로 못 나간다 */}
         <Stack.Screen name="timer" options={{ gestureEnabled: false, animation: 'fade' }} />
+        <Stack.Screen name="gallery" options={{ animation: 'fade_from_bottom' }} />
       </Stack>
     </GestureHandlerRootView>
   );

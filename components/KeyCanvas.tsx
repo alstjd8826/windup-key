@@ -21,7 +21,7 @@ type Props = {
 };
 
 /** drei <Environment> 대신 RoomEnvironment + PMREM 으로 환경맵 생성 */
-function Env({ background }: { background: string }) {
+export function Env({ background }: { background: string }) {
   const gl = useThree((s) => s.gl);
   const scene = useThree((s) => s.scene);
 
