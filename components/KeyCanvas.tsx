@@ -1,7 +1,8 @@
 import { Canvas, useThree } from '@react-three/fiber/native';
 import * as Device from 'expo-device';
-import { useEffect } from 'react';
-import type { SharedValue } from 'react-native-reanimated';
+import { useCallback, useEffect, useRef } from 'react';
+import { useAnimatedReaction, type SharedValue } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 
@@ -61,22 +62,35 @@ function CameraRig({ widthRatio }: { widthRatio: number }) {
   return null;
 }
 
+const IS_SIM = !Device.isDevice;
+
 export default function KeyCanvas({ rotation, widthRatio, background = '#F5F5F5' }: Props) {
+  // 시뮬레이터(demand 렌더)에서는 회전값이 바뀔 때 직접 다시 그리라고 알려야 한다
+  const invalidateRef = useRef<(() => void) | null>(null);
+  const invalidate = useCallback(() => invalidateRef.current?.(), []);
+  useAnimatedReaction(
+    () => rotation.value,
+    (v, prev) => {
+      if (IS_SIM && v !== prev) scheduleOnRN(invalidate);
+    },
+  );
+
   return (
     <Canvas
       style={{ flex: 1 }}
       camera={{ fov: FOV, near: 0.1, far: 100 }}
       // 시뮬레이터 소프트웨어 GL 은 MSAA 합성(gldMergeScanlines2x2)에서도 멈추거나 크래시한다
-      gl={{ antialias: Device.isDevice }}
+      gl={{ antialias: !IS_SIM }}
       // 시뮬레이터는 매 프레임 그리면 GL 큐가 밀려 화면이 안 나온다 → 필요할 때만 렌더
-      frameloop={Device.isDevice ? 'always' : 'demand'}
-      onCreated={({ gl }) => {
+      frameloop={IS_SIM ? 'demand' : 'always'}
+      onCreated={({ gl, invalidate: inv }) => {
+        invalidateRef.current = () => inv();
         gl.toneMapping = THREE.ACESFilmicToneMapping;
         gl.outputColorSpace = THREE.SRGBColorSpace;
       }}
     >
       <Env background={background} />
-      {!Device.isDevice && (
+      {IS_SIM && (
         // 시뮬레이터 전용 대체 조명 (실기기는 환경맵만 사용)
         <>
           <hemisphereLight args={['#ffffff', '#888888', 2]} />
