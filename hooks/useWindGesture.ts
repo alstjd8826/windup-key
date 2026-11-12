@@ -2,7 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import { Gesture } from 'react-native-gesture-handler';
-import { useSharedValue } from 'react-native-reanimated';
+import { cancelAnimation, Easing, useSharedValue, withTiming } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { minutesOf, TICK, TWO_PI, windBegin, windStep } from './windMath';
@@ -57,6 +57,7 @@ export function useWindGesture(maxMinutes = MAX_MINUTES) {
       Gesture.Pan()
         .minDistance(0)
         .onBegin((e) => {
+          cancelAnimation(total); // 되감기 애니메이션 중이면 그 자리에서 이어 감는다
           prevAngle.value = windBegin(e.x, e.y, cx.value, cy.value);
         })
         .onUpdate((e) => {
@@ -95,8 +96,11 @@ export function useWindGesture(maxMinutes = MAX_MINUTES) {
     [cx, cy, prevAngle, total, lastTick, lastMinutes, maxHit, maxTotal],
   );
 
-  const reset = useCallback(() => {
-    total.value = 0;
+  /** animate: 열쇠와 게이지가 거꾸로 풀리며 0으로 돌아간다 */
+  const reset = useCallback((animate = false) => {
+    total.value = animate
+      ? withTiming(0, { duration: 520, easing: Easing.bezier(0.4, 0, 0.2, 1) })
+      : 0;
     lastTick.value = 0;
     lastMinutes.value = 0;
     maxHit.value = false;
