@@ -20,6 +20,7 @@ import PressableScale from '../components/PressableScale';
 import RollingNumber from '../components/RollingNumber';
 import WindGauge from '../components/WindGauge';
 import { MAX_MINUTES, useWindGesture } from '../hooks/useWindGesture';
+import { useTodayLeftMin } from '../stores/usage';
 import { TWO_PI } from '../hooks/windMath';
 
 const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
@@ -29,7 +30,9 @@ const NUMBER_LINE = 84;
 const BUTTON_LINE = 22;
 
 export default function WindScreen() {
-  const maxMinutes = MAX_MINUTES;
+  const todayLeft = useTodayLeftMin();
+  const maxMinutes = Math.min(MAX_MINUTES, todayLeft);
+  const exhausted = maxMinutes === 0;
   const { gesture, total, minutes, reset, onKeyLayout } = useWindGesture(maxMinutes);
   const enabled = minutes > 0;
 
@@ -48,7 +51,7 @@ export default function WindScreen() {
   // 최대치 도달 시 숫자가 한 번 튕긴다
   const pop = useSharedValue(1);
   useEffect(() => {
-    if (minutes === maxMinutes) {
+    if (maxMinutes > 0 && minutes === maxMinutes) {
       pop.value = withSequence(withTiming(1.08, { duration: 120 }), withSpring(1, { damping: 8 }));
     }
   }, [minutes, maxMinutes, pop]);
@@ -61,8 +64,9 @@ export default function WindScreen() {
   });
 
   const onUse = () => {
-    // TODO(4단계): router.push({ pathname: '/timer', params: { minutes } })
-    console.log('[wind] use', { minutes });
+    router.push({ pathname: '/timer', params: { minutes: String(minutes) } });
+    // 타이머가 화면을 덮은 뒤 조용히 리셋 (돌아왔을 때 0부터)
+    setTimeout(() => reset(), 400);
   };
 
   const onQuit = () => {
@@ -96,13 +100,19 @@ export default function WindScreen() {
       </Animated.View>
 
       <Animated.Text entering={rise(4)} style={styles.caption}>
-        1바퀴에 1분{'\n'}1분이 안 되는 나머지는 버려집니다
+        {exhausted
+          ? '오늘 한도를 다 썼습니다\n내일 다시 감을 수 있어요'
+          : '1바퀴에 1분\n1분이 안 되는 나머지는 버려집니다'}
       </Animated.Text>
 
       {/* 열쇠·숫자 영역 위에 덮는 투명 제스처 레이어 (Canvas 자체 터치는 쓰지 않음).
           버튼보다 먼저 그려서 버튼 터치는 버튼이 받는다 */}
       <GestureDetector gesture={gesture}>
-        <View style={StyleSheet.absoluteFill} collapsable={false} />
+        <View
+          style={StyleSheet.absoluteFill}
+          collapsable={false}
+          pointerEvents={exhausted ? 'none' : 'auto'}
+        />
       </GestureDetector>
 
       <View style={styles.spacer} pointerEvents="none" />
